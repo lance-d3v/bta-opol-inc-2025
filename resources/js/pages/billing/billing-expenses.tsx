@@ -412,7 +412,7 @@ export default function Expenses() {
 
 const getReceiptUrl = (receiptPhoto?: string | null) => {
     // Replace 'your_bucket_name' with the exact name of your Supabase bucket
-    const supabaseBaseUrl = 'http://127.0.0.1:54321/storage/v1/object/public/public-assets';
+    const supabaseBaseUrl = 'https://blessed-trinity-academy.onrender.com/storage/v1/object/public/public-assets';
 
     return receiptPhoto
         ? `${supabaseBaseUrl}/${receiptPhoto}`
