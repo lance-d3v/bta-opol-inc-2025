@@ -142,7 +142,7 @@ public function index(Request $request)
             'expense_date' => 'required|date',
             'receipt_number' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
-            'remarks' => 'nullable|string|max:255',
+            'remarks' => 'string|max:255',
             'responsible' => 'required|string|max:255',
             'receipt_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
@@ -156,7 +156,8 @@ public function index(Request $request)
 
         // handle photo upload if provided
         if ($request->hasFile('receipt_photo')) {
-            $path = $request->file('receipt_photo')->store('receipts', 'public');
+            // Change 'public' to 's3' to upload to Supabase
+            $path = $request->file('receipt_photo')->store('receipts', 's3');
             $validated['receipt_photo'] = $path;
         }
 

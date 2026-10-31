@@ -410,11 +410,14 @@ export default function Expenses() {
         });
     };
 
-    const getReceiptUrl = (receiptPhoto?: string | null) => {
-        return receiptPhoto
-            ? `/storage/${receiptPhoto}`
-            : '/images/no-image.png';
-    };
+const getReceiptUrl = (receiptPhoto?: string | null) => {
+    // Replace 'your_bucket_name' with the exact name of your Supabase bucket
+    const supabaseBaseUrl = 'http://127.0.0.1:54321/storage/v1/object/public/public-assets';
+
+    return receiptPhoto
+        ? `${supabaseBaseUrl}/${receiptPhoto}`
+        : '/images/no-image.png';
+};
 
     const totalCategories = Object.keys(categoryTotals).length;
     const totalRecords = expenses.data.length;
