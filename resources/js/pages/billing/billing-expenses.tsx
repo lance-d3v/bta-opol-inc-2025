@@ -161,6 +161,7 @@ export default function Expenses() {
     const [isLoading, setIsLoading] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [searchValue, setSearchValue] = useState(filters.search || '');
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
     const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -305,24 +306,37 @@ export default function Expenses() {
             },
 
             onError: (errors) => {
-                setIsLoading(false);
+    setIsLoading(false);
 
-                const errorMessage =
-                    typeof errors?.message === 'string'
-                        ? errors.message
-                        : 'Please review the form and try again.';
+    // Store all field-specific errors
+    setFormErrors(errors);
 
-                toast.error('We couldn’t save the expense.', {
-                    id: 'save-expense',
-                    description: errorMessage,
-                });
-            },
+    // Get the first actual validation error
+    const firstError = Object.values(errors).find(
+        (error) => typeof error === 'string'
+    );
+
+    toast.error('Unable to save expense.', {
+        id: 'save-expense',
+        description:
+            firstError || 'Please review the form and try again.',
+        duration: 5000,
+    });
+},
 
             onFinish: () => {
                 setIsLoading(false);
             },
         });
     };
+
+    const clearFieldError = (field: string) => {
+    setFormErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[field];
+        return updated;
+    });
+};
 
     const chartData = {
         labels: Object.keys(categoryTotals),
@@ -864,22 +878,24 @@ const getReceiptUrl = (receiptPhoto?: string | null) => {
                                                     <div className="relative">
                                                         <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
-                                                        <Input
-                                                            id="vendor_merchant"
-                                                            type="text"
-                                                            value={
-                                                                expenseMerchant
-                                                            }
-                                                            onChange={(e) =>
-                                                                setExpenseMerchant(
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                            placeholder="e.g. ABC Supplies"
-                                                            className="h-11 pl-9"
-                                                            required
-                                                        />
+                                                       <Input
+    id="vendor_merchant"
+    type="text"
+    value={expenseMerchant}
+    onChange={(e) => {
+        setExpenseMerchant(e.target.value);
+        clearFieldError('vendor_merchant');
+    }}
+    placeholder="e.g. ABC Supplies"
+    className="h-11 pl-9"
+    aria-invalid={!!formErrors.vendor_merchant}
+/>
+
+{formErrors.vendor_merchant && (
+    <p className="text-sm text-destructive">
+        {formErrors.vendor_merchant}
+    </p>
+)}
                                                     </div>
                                                 </div>
                                             </div>
@@ -942,6 +958,12 @@ const getReceiptUrl = (receiptPhoto?: string | null) => {
                                                             className="h-11 pl-9"
                                                             required
                                                         />
+
+                                                        {formErrors.receipt_number && (
+    <p className="text-sm text-destructive">
+        {formErrors.receipt_number}
+    </p>
+)}
                                                     </div>
                                                 </div>
                                             </div>
@@ -975,6 +997,12 @@ const getReceiptUrl = (receiptPhoto?: string | null) => {
                                                         className="h-12 pl-8 text-lg font-semibold"
                                                         required
                                                     />
+
+                                                    {formErrors.amount && (
+    <p className="text-sm text-destructive">
+        {formErrors.amount}
+    </p>
+)}
                                                 </div>
 
                                                 <p className="text-xs text-muted-foreground">
@@ -1001,6 +1029,12 @@ const getReceiptUrl = (receiptPhoto?: string | null) => {
                                                     placeholder="Add a short note about this expense..."
                                                     className="h-11"
                                                 />
+
+                                                {formErrors.remarks && (
+    <p className="text-sm text-destructive">
+        {formErrors.remarks}
+    </p>
+)}
                                             </div>
 
                                             {/* RESPONSIBLE */}
@@ -1028,6 +1062,12 @@ const getReceiptUrl = (receiptPhoto?: string | null) => {
                                                         className="h-11 pl-9"
                                                         required
                                                     />
+
+                                                    {formErrors.responsible && (
+    <p className="text-sm text-destructive">
+        {formErrors.responsible}
+    </p>
+)}
                                                 </div>
                                             </div>
 
@@ -1093,6 +1133,12 @@ const getReceiptUrl = (receiptPhoto?: string | null) => {
                                                         }
                                                         className="sr-only"
                                                     />
+
+                                                    {formErrors.receipt_photo && (
+    <p className="text-sm text-destructive">
+        {formErrors.receipt_photo}
+    </p>
+)}
                                                 </label>
                                             </div>
 

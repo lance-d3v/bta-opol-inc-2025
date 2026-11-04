@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BillingExpenses;
 use App\Models\SchoolYear;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class BillingExpensesController extends Controller
@@ -133,42 +134,62 @@ public function index(Request $request)
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        // validate request data
-        $validated = $request->validate([
-            'expense_category' => 'required|string|max:255',
-            'vendor_merchant' => 'required|string|max:255',
-            'expense_date' => 'required|date',
-            'receipt_number' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'remarks' => 'string|max:255',
-            'responsible' => 'required|string|max:255',
-            'receipt_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'expense_category' => ['required', 'string', 'max:255'],
+        'vendor_merchant' => ['required', 'string', 'max:255'],
+        'expense_date' => ['required', 'date'],
+        'receipt_number' => ['required', 'string', 'max:255'],
+        'amount' => ['required', 'numeric', 'min:0.01'],
+        'remarks' => ['nullable', 'string', 'max:255'],
+        'responsible' => ['required', 'string', 'max:255'],
+        'receipt_photo' => [
+            'nullable',
+            'image',
+            'mimes:jpg,jpeg,png',
+            'max:2048',
+        ],
+    ], [
+        'expense_category.required' => 'Please select an expense category.',
+        'vendor_merchant.required' => 'Please enter the vendor or merchant name.',
+        'expense_date.required' => 'Please select the expense date.',
+        'expense_date.date' => 'Please enter a valid expense date.',
+        'receipt_number.required' => 'Please enter the receipt or OR number.',
+        'amount.required' => 'Please enter the expense amount.',
+        'amount.numeric' => 'The expense amount must be a valid number.',
+        'amount.min' => 'The expense amount must be greater than zero.',
+        'responsible.required' => 'Please enter the responsible person.',
+        'receipt_photo.image' => 'The receipt attachment must be an image.',
+        'receipt_photo.mimes' => 'Only JPG, JPEG, and PNG images are allowed.',
+        'receipt_photo.max' => 'The receipt image must not exceed 2MB.',
+    ]);
+
+    // Find active school year
+    $activeSchoolYear = SchoolYear::where('is_active', true)->first();
+
+    if (!$activeSchoolYear) {
+        throw ValidationException::withMessages([
+            'form' => 'Cannot record expense. No active school year was found.',
         ]);
-
-        // find the active school year
-        $activeSchoolYear = SchoolYear::where('is_active', true)->first();
-
-        if (!$activeSchoolYear) {
-            return back()->withErrors(['school_year_id' => 'No active school year found.']);
-        }
-
-        // handle photo upload if provided
-        if ($request->hasFile('receipt_photo')) {
-            // Change 'public' to 's3' to upload to Supabase
-            $path = $request->file('receipt_photo')->store('receipts', 's3');
-            $validated['receipt_photo'] = $path;
-        }
-
-        // assign school_year_id automatically
-        $validated['school_year_id'] = $activeSchoolYear->id;
-
-        // create the billing expense
-        BillingExpenses::create($validated);
-
-        return back()->with('success', 'Expense successfully recorded.');
     }
+
+    // Assign school year automatically
+    $validated['school_year_id'] = $activeSchoolYear->id;
+
+    // Upload receipt photo if provided
+    if ($request->hasFile('receipt_photo')) {
+        $validated['receipt_photo'] = $request
+            ->file('receipt_photo')
+            ->store('receipts', 's3');
+    }
+
+    // Create expense record
+    BillingExpenses::create($validated);
+
+    return back()->with('success', 'Expense successfully recorded.');
+}
 
 
     /**
